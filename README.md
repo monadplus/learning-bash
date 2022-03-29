@@ -1,18 +1,16 @@
 # Learning BASH
 
-Resources:
-- http://mywiki.wooledge.org/BashGuide
+## Resources
+
+Bash:
+- http://mywiki.wooledge.org/BashGuide (intro)
+- http://mywiki.wooledge.org/BashProgramming (advanced)
 
 More on regex
 - http://mywiki.wooledge.org/RegularExpression
 
-```sh
-X=aabbc
+Bashsheet:
+- http://mywiki.wooledge.org/BashSheet#Patterns
 
-REGEX='aa[^c]+c$'
-if [[ "$X" =~ "$REGEX" ]]; then echo "OK"; else echo "KO"; fi
-
-# This is incorrect because [^c]* matches the empty string 
-# and then b matches aa(b)bc and returns OK.
-REGEX='aa[^c]*b'
-```
+BashFAQ:
+- http://mywiki.wooledge.org/BashFAQ
