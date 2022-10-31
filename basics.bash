@@ -1,22 +1,73 @@
 #!/usr/bin/env bash
 
-{
-names=("a" "b" "c")
-select name in "${names[@]}"; do
-    echo "$name"
-    if [[ "$name" =~ [bc] ]]; then
-        {echo "Exit"; break}
-    fi
-done
-}
+# Special parameters
+#
+# $0        path
+# $1..n     args
+# $*        all args
+# $@        all args
+# $#        args.len()
+# $?        exit code most recent fg command
+# $$        PID of current shell
+# $!        PID  most recent bg command
+# $_        last argument of the last command executed
 
-# parameter expansion
-for file in *.JPG *.jpeg
-do mv -- "$file" "${file%.*}.jpg"
+# Variable Types (not used)
+#
+# array                   declare -a
+# associative array       declare -A
+# integer                 declare -i
+# read only               declare -r
+# export                  declare -x        inherit by any child process
+
+# Arithmetic expressions (similar to C)
+let a=17+23
+let a="17 + 23"
+((a=$a+7))
+((a = a + 7))
+((a += 7))
+
+if ((a > 5)); then echo "a is more than 5"; fi
+
+# On bash, 0 = success, !0 = failure
+# On Arithmetic expressions, 0 is false, !0 is true
+if ((1)); then echo true; fi
+
+# Flag variables
+#
+#   found=0
+#   while ...; do
+#     if something; then found=1; fi    # Found one!  Keep going.
+#   done
+#   if ((found)); then ...
+
+# Parameter Expansion
+
+echo "'$USER', '$USERs', '${USER}s'" # 'arnau', '', 'arnaus'
+
+for file in *.JPG *.jpeg; do 
+  # Remove everything starting from the last period
+  mv -- "$file" "${file%.*}.jpg"
 done
 
-# removes extension
-${filename%.*}
+# ${parameter:-word}            default substitute
+# ${parameter:=word}            assign default and substitute
+# ${parameter:+word}            if parameter is null or unset, then $word
+# ${parameter:offset:length}    expand starting from offset until length characters
+# ${#parameter}                 length
+# ${parameter#pattern}          beginning. shortest match is discarded
+# ${parameter##pattern}                    longest
+# ${parameter%pattern}          end        shortest
+# ${parameter%%pattern}         end        longest
+# ${parameter/pat/string}       replaces first 'pat' by 'string' in 'parameter'
+# ${parameter//pat/string}      replaces every 'pat' by 'string' in 'parameter'
+# ${parameter/#pat/string}                     beginning
+# ${parameter/%pat/string}                     end
+
+file="megumin_purple.png"
+echo ${file%.*}        # megumin_purple
+path="/home/arnau/dotfiles/wallpapers/megumin_purple.png"
+echo ${${path##*/}%.*} # megumin_purple
 
 langRegex='(..)_(..)'
 if [[ $LANG =~ $langRegex ]]
