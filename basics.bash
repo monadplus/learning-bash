@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-# Special parameters
-#
+##########################
+### Special parameters ###
+##########################
+
 # $0        path
 # $1..n     args
 # $*        all args
@@ -12,15 +14,18 @@
 # $!        PID  most recent bg command
 # $_        last argument of the last command executed
 
-# Variable Types (not used)
-#
+### Variable Types ###
+
+# Not used
+
 # array                   declare -a
 # associative array       declare -A
 # integer                 declare -i
 # read only               declare -r
 # export                  declare -x        inherit by any child process
 
-# Arithmetic expressions (similar to C)
+### Arithmetic expressions (similar to C) ###
+
 let a=17+23
 let a="17 + 23"
 ((a=$a+7))
@@ -33,15 +38,15 @@ if ((a > 5)); then echo "a is more than 5"; fi
 # On Arithmetic expressions, 0 is false, !0 is true
 if ((1)); then echo true; fi
 
-# Flag variables
-#
+### Flag variables ###
+
 #   found=0
 #   while ...; do
 #     if something; then found=1; fi    # Found one!  Keep going.
 #   done
 #   if ((found)); then ...
 
-# Parameter Expansion
+### Parameter Expansion ###
 
 echo "'$USER', '$USERs', '${USER}s'" # 'arnau', '', 'arnaus'
 
@@ -69,6 +74,41 @@ echo ${file%.*}        # megumin_purple
 path="/home/arnau/dotfiles/wallpapers/megumin_purple.png"
 echo ${${path##*/}%.*} # megumin_purple
 
+################
+### Patterns ###
+################
+
+### Globs ###
+
+# *        any string (including null string)
+# ?        single character
+# [...]    any of the enclosed character
+
+# * and ? do not match '/' in a path.
+
+# DON'T         for file in $(ls); do rm "$file"; done
+# RECOMMENDED   for file in *; do rm "$file"; done
+
+if [[ $file = *.jpg ]]; then
+  echo "$filename is a jpeg"
+fi
+
+### Extended Globs ###
+
+shopt -s extglob # active extended globs
+
+# ?(list)
+# *(list) 
+# +(list)
+# @(list)      one of the given
+# !(list)
+echo !(*jpg|*bmp)
+
+### Regular Expresions ###
+
+# - Language: http://mywiki.wooledge.org/RegularExpression
+# - Not allowed in filename matching.
+
 langRegex='(..)_(..)'
 if [[ $LANG =~ $langRegex ]]
 then
@@ -78,15 +118,15 @@ else
     echo "Your locale was not recognised"
 fi
 
-X=aabbc
-REGEX='aa[^c]+c$'
-if [[ "$X" =~ "$REGEX" ]]; then echo "OK"; else echo "KO"; fi
+### Brace Expansion ###
 
-# REGEX='aa[^c]*b'
-# ^^^ This is incorrect because [^c]* matches the empty string
-# and then b matches aa(b)bc and returns OK.
+echo {/home/*,/root}/.*profile
 
-################# Loops
+#############################
+### Test and Conditionals ###
+#############################
+
+### Loops ###
 
 # while true; do
 #     echo "Infinite loop"
@@ -200,7 +240,10 @@ function foo {
     done
 }
 
-############################ Array
+
+##############
+### Arrays ###
+##############
 
 # This does NOT work in the general case
 # $ files=$(ls ~/*.jpg); cp $files /backups/
