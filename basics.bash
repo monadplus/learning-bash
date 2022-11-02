@@ -126,16 +126,84 @@ echo {/home/*,/root}/.*profile
 ### Test and Conditionals ###
 #############################
 
+# =0 success
+# (1-255) error
+
+mkdir d && cd d
+# good practice
+rm file || { echo 'Could not delete file!' >&2; exit 1; }
+
+# Grouping
+rg --quiet goodword "$file" && ! rg --quiet badword "$file" && { rm "$file" || echo "Couldn't delete: $file" >&2; }
+
+### Conditionals ###
+
+# Don't       'test' or '['
+# Do          '[['
+
+# Be careful!
+[[ "$filename" = *.png ]] && echo "$filename looks like a PNG file" # Pattern matching
+[[ "$filename" = "*.png" ]] && echo "$filename looks like a PNG file" # Exact match
+
+# Tests supported by [[:
+#
+# -z STRING           empty
+# -n STRING           not empty
+# 
+# ! EXPR
+#
+# INT -eq INT
+# INT -ne INT
+# INT -lt INT
+# INT -gt INT
+# INT -le INT
+# INT -ge INT
+#
+# STRING == PATTERN
+# STRING != PATTERN
+# STRING ~= REGEX
+# ( EXPR )
+# EXPR && EXPR
+# EXPR || EXPR
+#
+# -e FILE             file exist
+# -f FILE             is file
+# -d FILE             is directory
+# -h FILE             is symlink
+# -p PIPE             pipe exist
+# -r FILE             is readable by you
+# -s FILE             file exist and not empty
+# -t FD               FD open
+# -w FILE             is writable by you
+# -x FILE             is executable by you
+# -O FILE             is owned by you
+# -G FILE             is owned by your group
+#
+# STRING = STRING
+# STRING != STRING
+# STRING < STRING     lexicographical
+# STRING > STRING     lexicographical
+#
+# FILE1 -nt FILE2     FILE1 newer than FILE2 
+# FILE1 -ot FILE2           older
+
+[[ $DISPLAY ]] && echo "Your DISPLAY variable is not empty, you probably have Xorg running."
+[[ ! $DISPLAY ]] && echo "Your DISPLAY variable is empty, you probably don't have Xorg running."
+
+num="1234"
+if [[ -n "$num" && "$num" != *[!0123456789]* ]]; then
+  ((num += 6))
+  printf '"%s" is strictly numeric\n' "$num"
+else
+  printf '"%s" has a non-digit somewhere in it or is empty\n' "$num"
+fi >&2
+
 ### Loops ###
 
-# while true; do
-#     echo "Infinite loop"
-# done
-
-# while ! ping -c 1 -W 1 1.1.1.1; do
-#   echo "still waiting for 1.1.1.1"
-#   sleep 1
-# done
+while ! ping -c 1 -W 1 1.1.1.1; do
+  echo "still waiting for 1.1.1.1"
+  sleep 1
+done
 
 (( i=10 )); while (( i > 0 )); do
   echo "$i empty cans of beer."
@@ -146,7 +214,6 @@ for (( i=10; i > 0; i-- ))
   do echo "$i empty cans of beer."
 done
 
-10 9 8 7 6 5 4 3 2 1
 for i in {10..1}
   do echo "$i empty cans of beer."
 done
@@ -155,24 +222,15 @@ for i in 10 9 8 7 6 5 4 3 2 1; do
     echo "$i empty cans of beer."
 done
 
-# for file in $(ls *.mp3); do # Bogus
-# for file in "$(ls *.mp3)"; do # Bogus
-for file in "$(ls *.bash)"; do
-    echo "$file"
+# DONT            for file in $(ls *.mp3); do
+# DO              for file in "$(ls *.bash)"; do
+# RECOMMENDED     for file in *.bash; do
+
+while read -p $'The sweet machine.\nInsert 20c and enter your name: ' name; do 
+  echo "The machine spits out three lollipops at $name."
 done
 
-# while read -p $'The sweet machine.\nInsert 20c and enter your name: ' name
-# do echo "The machine spits out three lollipops at $name."
-# done
-
-# while sleep 300
-# do kmail --check
-# done
-
-# $ # Wait for a host to come back online.
-# $ while ! ping -c 1 -W 1 "$host"
-# > do echo "$host is still unavailable."
-# > done; echo -e "$host is available again.\a"
+### Case and Select ###
 
 case $LANG in
     en*) echo 'Hello!' ;;
@@ -187,45 +245,11 @@ esac
 
 echo "Which of these does not belong in the group?"; \
 select choice in Apples Pears Crisps Lemons Kiwis; do
-if [[ $choice = Crisps ]]; then
-    echo "Correct!  Crisps are not fruit."
-    break
-fi
-echo "Errr... no.  Try again."
-done
-
-PS3="Which of these does not belong in the group (#)? "; \
-select choice in Apples Pears Crisps Lemons Kiwis; do
-if [[ $choice = Crisps ]]; then
-    echo "Correct!  Crisps are not fruit."
-    break
-fi
-echo "Errr... no.  Try again."
-done
-
-while true; do
-    echo "Welcome to the Menu"
-    echo "  1. Say hello"
-    echo "  2. Say good-bye"
-    read -p "-> " response
-    case $response in
-        1) echo 'Hello there!' ;;
-        2) echo 'See you later!'; break ;;
-        *) echo 'What was that?' ;;
-    esac
-done
-
-quit=
-while test -z "$quit"; do
-    echo "Welcome to the Menu"
-    echo "  1. Say hello"
-    echo "  2. Say good-bye"
-    read -p "-> " response
-    case $response in
-        1) echo 'Hello there!' ;;
-        2) echo 'See you later!'; quit=y ;;
-        *) echo 'What was that?' ;;
-    esac
+  if [[ $choice = Crisps ]]; then
+      echo "Correct!  Crisps are not fruit."
+      break
+  fi
+  echo "Errr... no.  Try again."
 done
 
 # $ foo "hello world" y
@@ -240,6 +264,7 @@ function foo {
     done
 }
 
+# [How can I handle command-line options and arguments in my script easily?](http://mywiki.wooledge.org/BashFAQ/035)
 
 ##############
 ### Arrays ###
