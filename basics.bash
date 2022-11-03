@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Use `help <command>`
+
 ##########################
 ### Special parameters ###
 ##########################
@@ -73,6 +75,22 @@ file="megumin_purple.png"
 echo ${file%.*}        # megumin_purple
 path="/home/arnau/dotfiles/wallpapers/megumin_purple.png"
 echo ${${path##*/}%.*} # megumin_purple
+
+### read ###
+
+read name surname
+echo "Your name is $name $surname"
+
+IFS=' ' read -r -p "What's your name? " -a name
+echo "Your name is ${name[0]} ${name[1]}"
+
+# -d: change delimitor (instead of newline)
+# -s: silent
+# -r: treat backslash as any other character
+# -t: timeout
+# -u: fd
+
+# Docs: https://www.gnu.org/software/bash/manual/bash.html#index-read
 
 ################
 ### Patterns ###
@@ -226,10 +244,6 @@ done
 # DO              for file in "$(ls *.bash)"; do
 # RECOMMENDED     for file in *.bash; do
 
-while read -p $'The sweet machine.\nInsert 20c and enter your name: ' name; do 
-  echo "The machine spits out three lollipops at $name."
-done
-
 ### Case and Select ###
 
 case $LANG in
@@ -252,7 +266,6 @@ select choice in Apples Pears Crisps Lemons Kiwis; do
   echo "Errr... no.  Try again."
 done
 
-# $ foo "hello world" y
 function foo {
     # Bogus
     for param in "$*"; do
@@ -263,38 +276,41 @@ function foo {
         echo "$param"
     done
 }
-
-# [How can I handle command-line options and arguments in my script easily?](http://mywiki.wooledge.org/BashFAQ/035)
+# foo "hello world" y
+# > hello world y
+# > hello world
+# > y
 
 ##############
 ### Arrays ###
 ##############
 
-# This does NOT work in the general case
-# $ files=$(ls ~/*.jpg); cp $files /backups/
+### Creating Arrays ###
 
-# This DOES work in the general case
-# $ files=(~/*.jpg); cp "${files[@]}" /backups/
+# var=( ... )
 
-# Example
-files=$(ls ~/*rc); for file in "$files"; do echo "$file"; done # Not recommended
-files=(~/*rc); echo "${files[@]}" # Recommended
-# Same example with for (including hidden files)
-for file in ~/{.,[^.]}*rc; do
-    echo "$file"
-done
-
-# array
 names=("Bob" "Peter" "$USER" "Big Bad John")
 names=([0]="Bob" [1]="Peter" [20]="$USER" [21]="Big Bad John")
-photos=(~/"My Photos"/*.jpg)
+photos=(~/"Pictures"/*.jpg)
 
 # $ files=$(ls)    # BAD, BAD, BAD!
 # $ files=($(ls))  # STILL BAD!
 # $ files=(*)      # Good!
 
+### Array from output of program ###
+
+# E.g. `find` output string separated by newlines
+
 # Here we use IFS with the value . to cut the given IP address into array elements wherever there's a .
-# $ IFS=. read -ra ip_elements <<< "127.0.0.1"
+IFS=. read -r -a ip_elements <<< "127.0.0.1"
+
+# filenames cannot contain NUL bytes.
+files=()
+while read -r -d ''; do # -d
+  files+=("$REPLY")
+done < <(find /foo -print0) # find -print0 separates filenames with NUL byte
+
+### Using Arrays ###
 
 myfiles=([0]="/home/wooledg/.bashrc" [1]="billing codes.xlsx" [2]="hello.c")
 declare -p myfiles # print content of variable
@@ -306,7 +322,7 @@ done
 
 names=("Bob" "Peter" "$USER" "Big Bad John")
 for name in "${names[@]}"; do echo "$name"; done
-
+# equivalent to
 for name in "Bob" "Peter" "$USER" "Big Bad John"; do echo "$name"; done
 
 myfiles=(db.sql home.tbz2 etc.tbz2)
@@ -321,11 +337,15 @@ echo "Today's contestants are: ${names[*]}"
 # Today's contestants are: Bob Peter lhunath Big Bad John
 
 names=("Bob" "Peter" "$USER" "Big Bad John")
-( IFS=,; echo "Today's contestants are: ${names[*]}" ) # Be careful to ( IFS=...), otherwise it will overwrite the default.
+( IFS=,; echo "Today's contestants are: ${names[*]}" )
 # Today's contestants are: Bob,Peter,lhunath,Big Bad John
 
 array=(a b c)
 echo ${#array[@]} # 3
+
+### Iterating through the indices ###
+
+# Syntax: "${!arrayname[@]}"
 
 first=(Jessica Sue Peter)
 last=(Jones Storm Parker)
@@ -339,14 +359,7 @@ for ((i=0; i<${#a[@]}; i+=2)); do
   echo "${a[i]} and ${a[i+1]}"
 done
 
-################## Sparse Arrays
-
-nums=(zero one two three four)
-nums[70]="seventy"
-unset 'nums[3]'
-declare -p nums
-
-################## Associative Arrays
+### Associative Arrays ###
 
 declare -A fullNames
 fullNames=( ["arnau"]="Arnau Arnau" ["greycat"]="Greg Wooledge" )
@@ -362,27 +375,30 @@ declare -p dict
 indexedArray=( "one" "two" )
 declare -A associativeArray=( ["foo"]="bar" ["alpha"]="omega" )
 index=0 key="foo"
-echo "${indexedArray[$index]}"
-echo "${indexedArray[index]}"
-echo "${indexedArray[index + 1]}"
-echo "${associativeArray[$key]}"
+echo "${indexedArray[$index]}" # one
+echo "${indexedArray[index]}" # one
+echo "${indexedArray[index + 1]}" # two
+echo "${associativeArray[$key]}" # bar
 echo "${associativeArray[key]}" # BOGUS
 echo "${associativeArray[key + 1]}" # BOGUS
 
-############### Input & Output
+########################
+### Input and Output ###
+########################
 
-# for arg in "$*"; do # BOGUS
-# for arg in $@; do # BOGUS
-for arg in "$@"; do
-    echo "$arg"
-done
+### Command-line Arguments ###
 
 echo "$1"; shift; echo "$1"
 
-# exaple argument parsing: http://mywiki.wooledge.org/BashFAQ/035
+# Command-line arguments parsing: 
+#    http://mywiki.wooledge.org/BashFAQ/035
+
+### The environment ###
 
 # If you want to put information into the environment for your child processes to inherit
 export MYVAR=something
+
+### File Descriptors ###
 
 # Standard Input (stdin): File Descriptor 0
 # Standard Output (stdout): File Descriptor 1
@@ -396,6 +412,8 @@ read -p "What is your name? " name; echo "Good day, $name.  Would you like some 
 
 # custom errors to stderr
 echo "Uh oh.  Something went really bad.." >&2
+
+### Redirection ###
 
 cat < README.md
 
@@ -415,7 +433,7 @@ grep "$HOSTNAME" /etc/*
 # grep proud file 'not a file' > proud.log 2> proud.log # BOGUS
 grep proud file 'not a file' > proud.log 2>&1
 
-##### Heredocs (Here document)
+### Heredocs
 
 grep proud <<EOF # EOF, END, whatever keyword
 I am a proud sentence.
@@ -439,13 +457,14 @@ cat <<EOF > file
 My home dir is $HOME
 EOF
 
-##### Herestrings
+### Herestrings
+
 grep proud <<<"$USER sits proudly on his throne in $HOSTNAME."
 
 echo 'Wrap this silly sentence.' | fmt -t -w 20 # Worse
 fmt -t -w 20 <<< 'Wrap this silly sentence.' # Better
 
-######## Pipes
+### Pipes ###
 
 mkfifo myfifo # aka named pipes
 grep bea myfifo &
@@ -471,15 +490,16 @@ echo "The message is: $message"
 echo 'Salut, le monde!' | { read message; echo "The message is: $message"; }
 # The message is: Salut, le monde!
 
+#########################
+### Compound Commands ###
+#########################
 
-################ Compound Commands
-
-### Subshells
+### Subshells ###
 
 (cd /tmp || exit 1; date > timestamp) # moves only inside subshell
 pwd
 
-### Command grouping
+### Command grouping ###
 
 # Commands may be grouped together using curly braces.
 # Command groups allow a collection of commands to be considered as a whole with regards to redirection and control flow
@@ -511,7 +531,7 @@ echo "There are $(($rows * $columns)) cells"
 (flag=1; if ((flag)); then echo "uh oh, our flag is up"; fi)
 (flag=0; if ((flag)); then echo "uh oh, our flag is up"; fi)
 
-#### Functions
+### Functions ###
 
 open() {
     case "$1" in
@@ -534,18 +554,14 @@ count() {
 }
 for ((i=1; i<=3; i++)); do count $i; done
 
-
-#### Alias
-
-# Do not work on scripts
-
-#### Destroying
+### Destroying ###
 
 unset -f myfunction
 unset -v 'myArray[2]'
 
-
-##################### Sourcing
+################
+### Sourcing ###
+################
 
 # When you call one script from another, the new script inherits the environment of the original script.
 # When the script that you ran (or any other program, for that matter) finishes executing, its environment is discarded.
@@ -553,7 +569,9 @@ unset -v 'myArray[2]'
 # dotting
 . ./myscript # your shell will keep the state of myscript
 
-##################### Job Control
+###################
+### Job Control ###
+###################
 
 # $ jobs
 # $ Ctrl-z  # suspend
