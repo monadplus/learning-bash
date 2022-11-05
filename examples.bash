@@ -23,3 +23,20 @@ done
 echo "${numbers[@]}"
 
 ######################################################################
+# TODO: it somehow matches multiple lines
+
+found=0
+while IFS= read -r aline; do
+  r=$(rg --line-number 'FAQ' || " " <<<"$aline")
+  if [[ -n "$r" ]]; then 
+    found=1
+    line=$(rg '([0-9]*).*' --replace '$1'<<<"$r")
+    break
+  fi
+done < README.md
+
+if ((found)); then
+  echo "Found at line: $line"
+else
+  echo 'Not found!'
+fi
