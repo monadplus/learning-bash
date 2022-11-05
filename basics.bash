@@ -398,12 +398,12 @@ echo "$1"; shift; echo "$1"
 # If you want to put information into the environment for your child processes to inherit
 export MYVAR=something
 
-### File Descriptors ###
+### File Descriptors (FDs) ###
 
-# Standard Input (stdin): File Descriptor 0
-# Standard Output (stdout): File Descriptor 1
-# Standard Error (stderr): File Descriptor 2
-read -p "What is your name? " name; echo "Good day, $name.  Would you like some tea?"
+#            FD
+# stdin:     0
+# stdout:    1
+# stderr:    2
 
 # stderr is also connected to your terminal's output device, just like stdout.
 # As a result, error messages display on your monitor just like the messages on stdout.
@@ -415,35 +415,34 @@ echo "Uh oh.  Something went really bad.." >&2
 
 ### Redirection ###
 
-cat < README.md
+echo 'DuckDuckGo' > browsers.txt
+echo 'Firefox' 1> browsers.txt
 
-for homedir in /home/*
-do rm "$homedir/secret"
+# DON'T use `cat` to print the content of a file. Redirect
+cat < README.md
+cat 0< README.md
+
+for homedir in /home/*; do 
+  rm "$homedir/secret"
 done 2> errors
 
-for homedir in /home/*
-do rm "$homedir/secret"
+for homedir in /home/*; do 
+  rm "$homedir/secret"
 done 2> /dev/null
 
-for homedir in /home/*
-do rm "$homedir/secret"
+for homedir in /home/*; do 
+  rm "$homedir/secret"
 done 2>> errors
 
+### File Descriptor Manipulation
+
 grep "$HOSTNAME" /etc/*
-# grep proud file 'not a file' > proud.log 2> proud.log # BOGUS
-grep proud file 'not a file' > proud.log 2>&1
+# DON'T (they override)
+# grep proud * > proud.log 2> proud.log
+grep proud * > proud.log 2>&1
+grep proud * &> proud.log # for convenience, not portable to sh
 
 ### Heredocs
-
-grep proud <<EOF # EOF, END, whatever keyword
-I am a proud sentence.
-EOF
-# everything between EOF becomes stdin for the command
-
-# Does no substitution
-cat <<'XYZ'
-My home directory is $HOME
-XYZ
 
 usage() {
     cat <<EOF
@@ -453,9 +452,9 @@ It might be a few lines long, but shouldn't be excessive.
 EOF
 }
 
-cat <<EOF > file
+cat <<END > file
 My home dir is $HOME
-EOF
+END
 
 ### Herestrings
 
@@ -466,7 +465,8 @@ fmt -t -w 20 <<< 'Wrap this silly sentence.' # Better
 
 ### Pipes ###
 
-mkfifo myfifo # aka named pipes
+# named pipes
+mkfifo myfifo
 grep bea myfifo &
 echo "rat
 cow
@@ -474,21 +474,18 @@ deer
 bear
 snake" > myfifo
 
+# pipes
 echo "rat
 cow
 deer
 bear
 snake" | grep bea
 
-# The pipe operator creates a subshell environment for each command.
-# This is important to know because any variables that you modify
-# or initialize inside the second command will appear unmodified outside of it
-message=Test
-echo 'Salut, le monde!' | read message
-echo "The message is: $message"
-# The message is: Test
-echo 'Salut, le monde!' | { read message; echo "The message is: $message"; }
-# The message is: Salut, le monde!
+### Process Substitution ###
+
+# <(cmd)    Run command and gives you a temporary filename with the output.
+
+diff <(sort file1) <(sort file2)
 
 #########################
 ### Compound Commands ###
