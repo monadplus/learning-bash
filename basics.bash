@@ -458,10 +458,11 @@ END
 
 ### Herestrings
 
+# commands reads the herestrings from the stdin
 grep proud <<<"$USER sits proudly on his throne in $HOSTNAME."
 
-echo 'Wrap this silly sentence.' | fmt -t -w 20 # Worse
-fmt -t -w 20 <<< 'Wrap this silly sentence.' # Better
+echo 'Wrap this silly sentence.' | fmt -t -w 20 # meh
+fmt -t -w 20 <<< 'Wrap this silly sentence.' # Recommended
 
 ### Pipes ###
 
@@ -474,7 +475,7 @@ deer
 bear
 snake" > myfifo
 
-# pipes
+# nameless pipes
 echo "rat
 cow
 deer
@@ -498,35 +499,16 @@ pwd
 
 ### Command grouping ###
 
-# Commands may be grouped together using curly braces.
-# Command groups allow a collection of commands to be considered as a whole with regards to redirection and control flow
-
 { echo "Starting at $(date)"; rsync -av . /backup; echo "Finishing at $(date)"; } >backup.log 2>&1
 
-# for behave like a command grouping
-echo "cat
-mouse
-dog" > inputfile
-for var in {a..c}; do read -r "$var"; done < inputfile
-echo "$b"
+# if and whiles act as command groups
 
 [[ -f $CONFIGFILE ]] || { echo "Config file $CONFIGFILE not found" >&2; exit 1; }
 
 ### Arithmetic Evaluation
-unset a; a=4+5 # 4+5
-let a=4+5 # 9
-let a='(5+2)*3' # 21
-if [[(($a == 21))]]; then echo 'Blackjack!'; fi
-
-echo "There are $(($rows * $columns)) cells"
 
 ## ternary operator
 ((abs = (a >= 0) ? a : -a))
-
-# Note that we used variables inside ((...)) without prefixing them with $-signs.
-# This is a special syntactic shortcut that Bash allows inside arithmetic evaluations and arithmetic expressions.
-(flag=1; if ((flag)); then echo "uh oh, our flag is up"; fi)
-(flag=0; if ((flag)); then echo "uh oh, our flag is up"; fi)
 
 ### Functions ###
 
@@ -538,14 +520,9 @@ open() {
     esac
 }
 
-# Recall 'for file' is equivalent to 'for file in "$@"'
-for file; do
-    open "$file"
-done
-
-# Functions may also have local variables, declared with the local or declare keywords
+# local varaibles
 count() {
-    local i # declare i
+    local i
     for ((i=1; i<=$1; i++)); do echo $i; done
     echo 'Ah, ah, ah!'
 }
@@ -565,127 +542,3 @@ unset -v 'myArray[2]'
 
 # dotting
 . ./myscript # your shell will keep the state of myscript
-
-###################
-### Job Control ###
-###################
-
-# $ jobs
-# $ Ctrl-z  # suspend
-# $ fg # bring background job to the foreground
-# $ bg # run a suspended job in the background
-# $ suspend
-
-files=(*.ogg)
-for i in "${!files[@]}"; do
-  if ...; then
-    unset 'files[i]'
-  fi
-done
-mplayer "${files[@]}"
-
-# Parse a file like:
-# Smith    Beatrice   1970-01-01 123456789
-# Jackson  Paul          1980-02-02   987654321
-# O'Leary  Sheamus 1977-07-07 7777777
-while read -r last first birth ssn; do
-  ...
-done < "$file"
-
-# Parse /etc/group
-while IFS=: read -r group pass gid users; do
-  ...
-done < "$file"
-
-
-##### Remove the IPs in my blocklist file, from my logfile
-
-declare -A bad  # associative array
-while IFS=: read -r ip _; do
-  bad["$ip"]=1
-done < blocklist
-
-unset tmp
-trap '[[ $tmp ]] && rm -f "$tmp"' EXIT # captures the EXIT signal and removes the temporal file.
-tmp=$(mktemp) || exit # creates a temporal file.
-
-while read -r ip rest; do
-  [[ ${bad["$ip"]} ]] && continue
-  printf '%s %s\n' "$ip" "$rest"
-done < logfile > "$tmp"
-
-mv "$tmp" logfile
-
-#### Find duplicate files in a directory hierarchy
-
-# Usage: finddups [directory]
-declare -A seen # associative array
-while read -r -d '' md5 file; do
-  if [[ ${seen["$md5"]} ]]; then
-    printf 'Matching MD5: "%s" and "%s"\n' "${seen["$md5"]}" "$file"
-  fi
-  seen["$md5"]=$file
-done < <(find "${1:-.}" -type f -exec md5sum -z {} +)
-
-##### Example 1: Modifying a config file
-
-# File format:
-
-# options => {
-#   log_stats => 86400
-#   tcp_timeout => 15 ; zonefile-style comment
-#   include_optional_ns => true
-#   listen => [ 0.0.0.0 ]
-# }
-
-# plugins => {
-#   weighted => {
-#     multi = false # default
-#     service_types = up
-#     up_thresh => 0.1 # default
-
-#     xlaunch => {
-#       server1 = [ 1.1.1.1, 50 ]
-#       server2 = [ 2.2.2.2, 50 ]
-#       server3 = [ 3.3.3.3, 50 ]
-#      }
-#   }
-# }
-
-changed=0
-# server1 = [ IP, nn ]
-#    # server2 = [ 192.0.0.1, 8080 ]
-s='[[:space:]]*'
-re="^($s)(#?)$s(server[[:alnum:]]*)$s=$s\[$s([[:digit:].]*)$s,$s([[:digit:]]*)$s\]$s\$"
-
-while IFS= read -r line; do
-    if [[ "$line" =~ $re ]]; then
-        # This is a server line.  Use simple names for the extracted pieces.
-        white=${BASH_REMATCH[1]}
-        wascomment=${BASH_REMATCH[2]}
-        host=${BASH_REMATCH[3]}
-        ip=${BASH_REMATCH[4]}
-        number=${BASH_REMATCH[5]}
-
-        # Perform a ping test of the IP.  Linux ping syntax.
-        if ping -c 1 "$ip" >/dev/null 2>&1; then
-            comment=
-        else
-            comment="#"
-        fi
-        if [[ "$comment" != "$wascomment" ]]; then
-            changed=1
-        fi
-
-        # Construct and write output server line.
-        printf '%s%s%s = [ %s, %s ]\n' "$white" "$comment" "$host" "$ip" "$number"
-    else
-        # Not a server line.
-        printf '%s\n' "$line"
-    fi
-done < inputfile > outputfile &&
-mv outputfile inputfile
-
-if ((changed)); then
-    # restart service because a comment service now works or an uncommented service does no longer work.
-fi
