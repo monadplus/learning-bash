@@ -533,6 +533,9 @@ for ((i=1; i<=3; i++)); do count $i; done
 unset -f myfunction
 unset -v 'myArray[2]'
 
+# Debug mode
+set -x
+
 ################
 ### Sourcing ###
 ################
